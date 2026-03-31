@@ -157,7 +157,6 @@ async function deleteMessage (id) {
         console.error("Failed to delete:", err);
         alert("Error deleting message");
     }
-
 }
 
 function updatePageCount(total) {
