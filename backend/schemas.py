@@ -5,7 +5,6 @@ from datetime import datetime
 
 class MessageIn(BaseModel):
     text: str
-    author: str
     tags: List[str] = Field(default_factory=list)
 
 class MessageOut(BaseModel):

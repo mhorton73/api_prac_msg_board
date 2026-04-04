@@ -37,7 +37,7 @@ async def add_message(message: MessageIn, session = Depends(get_session), user =
 
         new_message = Message(
             text = message.text, 
-            author = message.author, 
+            author = user,
             timestamp = datetime.now(timezone.utc), 
             tags = tag_objects
             ) 
@@ -137,6 +137,8 @@ async def delete_message(id: int, session = Depends(get_session), user = Depends
     message = session.get(Message, id)
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
+    if message.author != user:
+        raise HTTPException(status_code=401, detail="Invalid Credentials")
 
     deleted_message = MessageOut(
         id=message.id,
@@ -169,9 +171,10 @@ async def edit_message(id: int, update: MessageIn, session = Depends(get_session
     message = session.get(Message, id)
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
+    if message.author != user:
+        raise HTTPException(status_code=401, detail="Invalid Credentials")
     
     message.text = update.text
-    message.author = update.author
 
     # --- Update tags ---
     tag_objects = []

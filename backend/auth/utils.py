@@ -3,7 +3,7 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timezone, timedelta
 
-SECRET_KEY = "your-secret-key"  # move to env later
+SECRET_KEY = #censored
 ALGORITHM = "HS256"
 SESSION_LENGTH = 1
 
