@@ -7,7 +7,7 @@ console.log("Running");
 async function loadMessages() {
   console.log("loading messages");
   try {
-    const res = await fetch(`http://127.0.0.1:8000/messages?page=${currentPage}&limit=${limit}`);
+    const res = await fetch(`http://127.0.0.1:8000/forum/messages?page=${currentPage}&limit=${limit}`);
     if (!res.ok) throw new Error("Request failed");
 
     const data = await res.json();
@@ -46,7 +46,7 @@ async function postMessage() {
   // Wrapped in try/ catch incase an error occurs
   try {
     // Use POST endpoint
-    await fetch("http://127.0.0.1:8000/messages", {
+    await fetch("http://127.0.0.1:8000/forum/messages", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -125,7 +125,7 @@ function edit (m, li, editBtn) {
 async function editSave(m, li, editBtn, currentText, input) {
     const newText = input.value; 
     try {
-        await fetch(`http://127.0.0.1:8000/messages/${m.id}`, {
+        await fetch(`http://127.0.0.1:8000/forum/messages/${m.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -149,7 +149,7 @@ async function deleteMessage (id) {
     if (!confirmed) return;
     console.log("deleting message");
     try {
-        await fetch(`http://127.0.0.1:8000/messages/${id}`, {
+        await fetch(`http://127.0.0.1:8000/forum/messages/${id}`, {
             method: "DELETE"
         });
         loadMessages(); // refresh the list

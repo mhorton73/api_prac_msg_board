@@ -14,8 +14,8 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    author = Column(String)
-    text = Column(String)
+    author = Column(String, index=True)
+    text = Column(String, index=True)
     timestamp = Column(DateTime, index=True)
     tags = relationship("Tag", secondary=message_tags, back_populates="messages")
 
@@ -25,3 +25,10 @@ class Tag(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     messages = relationship("Message", secondary=message_tags, back_populates="tags")
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, index = True)
+    password_hash = Column(String)

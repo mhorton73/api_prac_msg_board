@@ -24,3 +24,15 @@ class MessageListResponse(BaseModel):
     page: int
     limit: int
     messages: List[MessageOut]
+
+class UserIn(BaseModel):
+    username: str
+    password: str
+
+class RegisterResponse(BaseModel):
+    status: str
+    username: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
