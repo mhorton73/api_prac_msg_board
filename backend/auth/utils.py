@@ -1,20 +1,19 @@
 
+import os
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timezone, timedelta
 
-SECRET_KEY = #censored
-ALGORITHM = "HS256"
-SESSION_LENGTH = 1
+from backend.config import settings
+
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+SESSION_LENGTH = settings.SESSION_LENGTH
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 def hash_password(password: str):
-    password = password[:72]
-    password_bytes = password.encode("utf-8")
-    print(f"Password in bytes: {password_bytes}")
-    print(f"Length in bytes: {len(password_bytes)}")
-    return pwd_context.hash(password_bytes)
+    return pwd_context.hash(password)
 
 def verify_password(plain: str, hashed: str):
     return pwd_context.verify(plain, hashed)

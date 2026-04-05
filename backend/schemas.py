@@ -35,3 +35,7 @@ class RegisterResponse(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
+
+class CurrentUser(BaseModel):
+    id: int
+    username: str

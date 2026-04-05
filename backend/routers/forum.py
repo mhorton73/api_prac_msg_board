@@ -6,7 +6,7 @@ from sqlalchemy import asc, desc
 
 from ..database import SessionLocal
 from ..models import Message, Tag
-from ..schemas import MessageIn, MessageOut, MessageResponse, MessageListResponse
+from ..schemas import MessageIn, MessageOut, MessageResponse, MessageListResponse, CurrentUser
 from backend.auth.dependencies import get_current_user
 
 
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/forum", tags = ["forum"])
 # -------- Endpoints -------- 
 
 @router.post("/messages", response_model=MessageResponse, status_code=201) 
-async def add_message(message: MessageIn, session = Depends(get_session), user = Depends(get_current_user)): 
+async def add_message(message: MessageIn, session = Depends(get_session), user = CurrentUser): 
     """Post a message with text, author and optional tags. Records timestamp and generates a unique id."""
 
     try:
@@ -37,7 +37,7 @@ async def add_message(message: MessageIn, session = Depends(get_session), user =
 
         new_message = Message(
             text = message.text, 
-            author = user,
+            author = user.username,
             timestamp = datetime.now(timezone.utc), 
             tags = tag_objects
             ) 
@@ -137,10 +137,10 @@ async def delete_message(id: int, session = Depends(get_session), user = Depends
     message = session.get(Message, id)
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
-    if message.author != user:
+    if message.author != user.username:
         raise HTTPException(status_code=401, detail="Invalid Credentials")
 
-    deleted_message = MessageOut(
+    deleted_message = MessageOut(           # copy the message before deleting
         id=message.id,
         text=message.text,
         author=message.author,
@@ -171,7 +171,7 @@ async def edit_message(id: int, update: MessageIn, session = Depends(get_session
     message = session.get(Message, id)
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
-    if message.author != user:
+    if message.author != user.username:
         raise HTTPException(status_code=401, detail="Invalid Credentials")
     
     message.text = update.text

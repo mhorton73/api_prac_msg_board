@@ -2,12 +2,15 @@
 __pycache__/
 *.pyc
 
+# Env
+.env
+
 # Database files
 *.db
 
 # Backups
 backups/
 
-# Optional: OS junk
+# OS junk
 .DS_Store
 .vscode/

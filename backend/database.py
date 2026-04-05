@@ -3,12 +3,12 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
+from backend.config import settings
+
 db_folder = "./backend/db"
 os.makedirs(db_folder, exist_ok=True)
 
-DATABASE_URL = "sqlite:///./backend/db/messages.db"
-
-engine = create_engine(DATABASE_URL)
+engine = create_engine(settings.DATABASE_URL)
 
 SessionLocal = sessionmaker(
     bind=engine,

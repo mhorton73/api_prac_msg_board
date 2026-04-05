@@ -20,7 +20,6 @@ router = APIRouter(prefix="/auth", tags = ["auth"])
 
 @router.post("/register", status_code=201) 
 def register(user: UserIn, session=Depends(get_session)):
-    print(f"Password length: {len(user.password)}")
     hashed = hash_password(user.password)
 
     db_user = User(username=user.username, password_hash=hashed)
@@ -39,3 +38,34 @@ def login(user: UserIn, session=Depends(get_session)):
     token = create_access_token({"sub": db_user.username, "id": db_user.id})
 
     return LoginResponse(access_token= token, token_type = "bearer")
+
+# -------- Admin/ debug endpoints --------
+
+@router.get("/users")
+async def get_users(session = Depends(get_session)):
+
+    users = [
+        {
+            "id": user.id,
+            "username": user.username
+        }
+        for user in session.query(User).all()
+    ]
+
+    total = len(users)
+
+    return {"total": total, "users": users} 
+
+@router.delete("/users")
+async def delete_user(id: int, session = Depends(get_session)):
+
+    user = session.get(User, id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    deleted_user = user.username
+
+    session.delete(user)
+    session.commit()
+
+    return {"status":"deleted", "user" : deleted_user} 
