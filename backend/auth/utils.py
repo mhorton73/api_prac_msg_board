@@ -1,14 +1,16 @@
 
-import os
+from fastapi import HTTPException
 from passlib.context import CryptContext
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timezone, timedelta
 
 from backend.config import settings
+from ..schemas import CurrentUser
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 SESSION_LENGTH = settings.SESSION_LENGTH
+REFRESH_TOKEN_LENGTH = settings.REFRESH_TOKEN_LENGTH
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
@@ -23,3 +25,24 @@ def create_access_token(data: dict):
     expire = datetime.now(timezone.utc) + timedelta(hours=SESSION_LENGTH)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_LENGTH)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_token(token:str):
+    """
+    Decode a JWT and return a dictionary with user info.
+    Raises HTTPException(401) if invalid.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("id")
+        username = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return CurrentUser(id=user_id, username=username)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")

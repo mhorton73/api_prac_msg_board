@@ -1,7 +1,14 @@
 
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from backend.auth.utils import hash_password, verify_password, create_access_token
+from backend.auth.utils import (
+    hash_password, 
+    verify_password, 
+    create_access_token, 
+    create_refresh_token, 
+    decode_token
+)
 from ..database import SessionLocal
 from ..models import User
 from ..schemas import UserIn, RegisterResponse, LoginResponse
@@ -15,6 +22,7 @@ def get_session():
         session.close()
 
 router = APIRouter(prefix="/auth", tags = ["auth"])
+security = HTTPBearer()
 
 # -------- Endpoints -------- 
 
@@ -35,9 +43,19 @@ def login(user: UserIn, session=Depends(get_session)):
     if not db_user or not verify_password(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token({"sub": db_user.username, "id": db_user.id})
+    access_token = create_access_token({"sub": db_user.username, "id": db_user.id})
+    refresh_token = create_refresh_token({"sub": db_user.username, "id": db_user.id})
 
-    return LoginResponse(access_token= token, token_type = "bearer")
+    return LoginResponse(access_token= access_token, refresh_token = refresh_token)
+
+@router.post("/refresh")
+def refresh_token(auth: HTTPAuthorizationCredentials = Depends(security)):
+    ''' Issues a new access token by using the refresh token. '''
+
+    current_user = decode_token(auth.credentials)
+    access_token = create_access_token({"id": current_user.user_id, "sub": current_user.username})
+    return {"access_token": access_token}
+
 
 # -------- Admin/ debug endpoints --------
 
