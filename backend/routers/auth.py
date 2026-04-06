@@ -64,11 +64,18 @@ def refresh_token(
     
     remove_expired_tokens(session)
 
+    # Check if the current token is valid
+    token_db = session.query(RefreshToken).filter_by(token=auth.credentials).first()
+    if not token_db:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Decode and create new tokens
     user = decode_token(auth.credentials)
     access_token = create_access_token({"id": user.id, "sub": user.username})
     refresh_token = create_refresh_token({"id": user.id, "sub": user.username})
 
-    session.query(RefreshToken).filter_by(token=auth.credentials).delete()
+    # Rotate the refresh token
+    token_db.delete()
     session.add(refresh_token)
     session.commit()
 
