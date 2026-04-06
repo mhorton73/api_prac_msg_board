@@ -5,19 +5,22 @@
 
 # Goals
 # Multi-tag filtering
-# Input validation + constraints
-# Deploy on Render
+# Reply feature
+# Image posting
+# Move to PostgreSQL
+# look into docker
+# add README and documentation
 # Migration with alembic?
+# Automated testing, input validation + constraints
+# Deploy on Render
 
 
 # Other things to look into at some point:
-# Replace Dict with dict, List with list, then remove import from typing
 # Replace access token function inputs with pydantic models instead of dicts
 # Cache-ability
 # use a lock to fix global state 
 # health check endpoint, partial update endpoint (patch), metadata, logging
 # learn more about Depends from fastapi
-# Move to PostgreSQL
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

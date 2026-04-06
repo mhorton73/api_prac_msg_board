@@ -6,7 +6,7 @@ from sqlalchemy import asc, desc
 
 from ..database import SessionLocal
 from ..models import Message, Tag
-from ..schemas import MessageIn, MessageOut, MessageResponse, MessageListResponse, CurrentUser
+from ..schemas import MessageIn, MessageOut, MessageResponse, MessageListResponse
 from backend.auth.dependencies import get_current_user
 
 
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/forum", tags = ["forum"])
 # -------- Endpoints -------- 
 
 @router.post("/messages", response_model=MessageResponse, status_code=201) 
-async def add_message(message: MessageIn, session = Depends(get_session), user = CurrentUser): 
+async def add_message(message: MessageIn, session = Depends(get_session), user = Depends(get_current_user)): 
     """Post a message with text, author and optional tags. Records timestamp and generates a unique id."""
 
     try:

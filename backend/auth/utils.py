@@ -6,6 +6,7 @@ from datetime import datetime, timezone, timedelta
 
 from backend.config import settings
 from ..schemas import CurrentUser
+from ..models import RefreshToken
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
@@ -30,7 +31,17 @@ def create_refresh_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_LENGTH)
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    refresh_token = RefreshToken(
+        token = token,
+        user_id = data["id"],
+        expires_at = expire
+    )
+    return refresh_token
+
+def remove_expired_tokens(session):
+    now = datetime.now(timezone.utc)
+    session.query(RefreshToken).filter(RefreshToken.expires_at <= now).delete()
 
 def decode_token(token:str):
     """

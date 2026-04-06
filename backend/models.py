@@ -1,6 +1,7 @@
 
 from sqlalchemy import Column, Integer, String, DateTime, Table, ForeignKey
 from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
 from .database import Base
 
 message_tags = Table(
@@ -32,3 +33,16 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, index = True)
     password_hash = Column(String)
+
+    refresh_tokens = relationship("RefreshToken", back_populates="user")
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+    
+    id = Column(Integer, primary_key=True)
+    token = Column(String, unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))    
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    expires_at = Column(DateTime)
+    
+    user = relationship("User", back_populates="refresh_tokens")
