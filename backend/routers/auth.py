@@ -75,7 +75,7 @@ def refresh_token(
     refresh_token = create_refresh_token({"id": user.id, "sub": user.username})
 
     # Rotate the refresh token
-    token_db.delete()
+    session.delete(token_db)
     session.add(refresh_token)
     session.commit()
 
