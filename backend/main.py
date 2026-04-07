@@ -4,23 +4,19 @@
 # taskkill /PID <pid> /F to free up the port
 
 # Goals
-# Multi-tag filtering
-# Reply feature
-# Image posting
-# Move to PostgreSQL
-# look into docker
-# add README and documentation
-# Migration with alembic?
+#
+# add documentation
 # Automated testing, input validation + constraints
 # Deploy on Render
 
+# Other things to look into at some point/ in future projects:
+#
+# Multi-tag filtering
+# Move to PostgreSQL
+# Image posting
+# Migration with alembic?
+# look into docker
 
-# Other things to look into at some point:
-# Replace access token function inputs with pydantic models instead of dicts
-# Cache-ability
-# use a lock to fix global state 
-# health check endpoint, partial update endpoint (patch), metadata, logging
-# learn more about Depends from fastapi
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

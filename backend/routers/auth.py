@@ -146,7 +146,7 @@ async def get_tokens(session = Depends(get_session)):
     return {"total": total, "tokens": tokens} 
 
 @router.delete("/tokens/{id}")
-async def delete_token(session = Depends(get_session)):
+async def delete_token(id: int, session = Depends(get_session)):
 
     token = session.get(RefreshToken, id)
     if not token:

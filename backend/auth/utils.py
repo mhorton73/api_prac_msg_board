@@ -5,8 +5,8 @@ from jose import jwt, JWTError
 from datetime import datetime, timezone, timedelta
 
 from backend.config import settings
-from ..schemas import CurrentUser
-from ..models import RefreshToken
+from ..schemas import CurrentUser, MessageOut
+from ..models import RefreshToken, Message, Tag
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM

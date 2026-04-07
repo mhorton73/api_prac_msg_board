@@ -7,6 +7,7 @@ from sqlalchemy import asc, desc
 from ..database import SessionLocal
 from ..models import Message, Tag
 from ..schemas import MessageIn, MessageOut, MessageResponse, MessageListResponse
+from backend.forum.utils import serialize_message, create_tag_list, cleanup_orphaned_tags
 from backend.auth.dependencies import get_current_user
 
 
@@ -14,6 +15,9 @@ def get_session():
     session = SessionLocal()
     try:
         yield session
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -25,45 +29,34 @@ router = APIRouter(prefix="/forum", tags = ["forum"])
 async def add_message(message: MessageIn, session = Depends(get_session), user = Depends(get_current_user)): 
     """Post a message with text, author and optional tags. Records timestamp and generates a unique id."""
 
-    try:
-        tag_objects = []
-        for tag_name in set(message.tags):
-            tag = session.query(Tag).filter_by(name=tag_name).first()
-            if not tag:
-                tag = Tag(name=tag_name)
-                session.add(tag)
-                session.flush()
-            tag_objects.append(tag)
+    if message.parent_id:
+        parent = session.get(Message, message.parent_id)
+        if not parent:
+            raise HTTPException(status_code=404, detail="Parent message not found")
 
-        new_message = Message(
-            text = message.text, 
-            author = user.username,
-            timestamp = datetime.now(timezone.utc), 
-            tags = tag_objects
-            ) 
-    
-        session.add(new_message)
-        session.commit()
-        session.refresh(new_message)
+    tag_list = create_tag_list(session, message.tags)
 
-        response_data = MessageOut(
-            id=new_message.id,
-            text=new_message.text,
-            author=new_message.author,
-            timestamp=new_message.timestamp,
-            tags=[tag.name for tag in new_message.tags]
-        )
-    except Exception:
-        session.rollback()
-        raise
+    new_message = Message(
+        parent_id = message.parent_id,
+        text = message.text, 
+        author = user.username,
+        timestamp = datetime.now(timezone.utc), 
+        tags = tag_list
+        ) 
 
-    return MessageResponse(status = "added", data = response_data) 
+    session.add(new_message)
+    session.commit()
+    session.refresh(new_message)
+
+    return MessageResponse(status = "added", data = serialize_message(new_message)) 
 
 
-@router.get("/messages", response_model=MessageListResponse) 
+
+@router.get("/messages", response_model=MessageListResponse, status_code=200) 
 async def get_messages( 
         author: str = None, 
         tag: str = None, 
+        parent_id = None,
         page: int = 1, 
         limit: int = 10, 
         sort: str = "timestamp", 
@@ -80,10 +73,12 @@ async def get_messages(
     query = session.query(Message)
 
     # --- Filtering ---
-    if author:
+    if author is not None:
         query = query.filter(Message.author.ilike(author))
-    if tag:
+    if tag is not None:
         query = query.join(Message.tags).filter(Tag.name.ilike(tag)).distinct()
+    if parent_id is not None:
+        query = query.filter_by(parent_id=parent_id)
     
     # --- Sorting ---
 
@@ -97,13 +92,7 @@ async def get_messages(
     messages = query.offset((page-1)*limit).limit(limit).all()
     
     message_out = [
-        MessageOut(
-            id = msg.id,
-            text=msg.text,
-            author=msg.author,
-            timestamp=msg.timestamp,
-            tags=[tag.name for tag in msg.tags] 
-        )
+        serialize_message(msg)
         for msg in messages
     ] 
 
@@ -115,20 +104,17 @@ async def get_messages(
     ) 
 
 
-@router.get("/messages/{id}", response_model=MessageOut) 
+
+@router.get("/messages/{id}", response_model=MessageOut, status_code=200) 
 async def get_message(id: int, session = Depends(get_session)): 
     """Retrieves the message with the specified id."""
 
     message = session.get(Message, id)
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
-    return MessageOut(
-        id=message.id,
-        text=message.text,
-        author=message.author,
-        timestamp=message.timestamp,
-        tags=[t.name for t in message.tags]
-    )
+    return serialize_message(message)
+
+
 
 @router.delete("/messages/{id}", response_model=MessageResponse, status_code=200) 
 async def delete_message(id: int, session = Depends(get_session), user = Depends(get_current_user)): 
@@ -140,27 +126,18 @@ async def delete_message(id: int, session = Depends(get_session), user = Depends
     if message.author != user.username:
         raise HTTPException(status_code=401, detail="Invalid Credentials")
 
-    deleted_message = MessageOut(           # copy the message before deleting
-        id=message.id,
-        text=message.text,
-        author=message.author,
-        timestamp=message.timestamp,
-        tags=[t.name for t in message.tags]
-    )
+    deleted_message = serialize_message(message)           # copy the message before deleting
     old_tags = list(message.tags)
 
     session.delete(message)
     session.flush()
 
-    for tag in old_tags:          # clears any orphaned tags
-        if not tag.messages:
-            session.delete(tag)
+    cleanup_orphaned_tags(old_tags)
 
     session.commit()
 
     return MessageResponse(status="deleted", data = deleted_message)
     
-
 
 
 @router.put("/messages/{id}", response_model=MessageResponse, status_code=200) 
@@ -177,34 +154,17 @@ async def edit_message(id: int, update: MessageIn, session = Depends(get_session
     message.text = update.text
 
     # --- Update tags ---
-    tag_objects = []
-    for tag_name in set(update.tags):
-        tag = session.query(Tag).filter_by(name=tag_name).first()
-        if not tag:
-            tag = Tag(name=tag_name)
-            session.add(tag)
-            session.flush() 
-        tag_objects.append(tag)
+    new_tag_list = create_tag_list(session, update.tags)
     old_tags = list(message.tags)
-    message.tags = tag_objects  
+    message.tags = new_tag_list 
     session.flush()
 
-    new_tag_ids = {t.id for t in message.tags}
-    for tag in old_tags:                       # This part cleans orphaned tags
-        if tag.id not in new_tag_ids:
-            if not tag.messages:
-                session.delete(tag)
+    cleanup_orphaned_tags(session, old_tags)
 
     session.commit()
     session.refresh(message)
 
     return MessageResponse(
         status="updated",
-        data=MessageOut(
-            id=message.id,
-            text=message.text,
-            author=message.author,
-            timestamp=message.timestamp,
-            tags=[t.name for t in message.tags]
-        )
+        data=serialize_message(message)
     )

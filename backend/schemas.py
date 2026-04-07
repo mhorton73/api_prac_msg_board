@@ -6,9 +6,11 @@ from datetime import datetime
 class MessageIn(BaseModel):
     text: str
     tags: List[str] = Field(default_factory=list)
+    parent_id: int | None = None
 
 class MessageOut(BaseModel):
     id: int
+    parent_id: int
     text: str
     author: str
     timestamp: datetime

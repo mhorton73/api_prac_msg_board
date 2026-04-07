@@ -15,10 +15,12 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
+    parent_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
     author = Column(String, index=True)
     text = Column(String, index=True)
     timestamp = Column(DateTime, index=True)
     tags = relationship("Tag", secondary=message_tags, back_populates="messages")
+    
 
 class Tag(Base):
     __tablename__ = "tags"
