@@ -10,7 +10,7 @@ class MessageIn(BaseModel):
 
 class MessageOut(BaseModel):
     id: int
-    parent_id: int
+    parent_id: int | None
     text: str
     author: str
     timestamp: datetime
