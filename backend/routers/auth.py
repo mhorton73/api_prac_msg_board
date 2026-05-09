@@ -1,6 +1,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.exc import IntegrityError
 
 from backend.auth.utils import (
     hash_password, 
@@ -27,17 +28,28 @@ security = HTTPBearer()
 
 # -------- Endpoints -------- 
 
-@router.post("/register", status_code=201) 
+@router.post("/register", response_model=RegisterResponse, status_code=201) 
 def register(user: UserIn, session=Depends(get_session)):
+    
     hashed = hash_password(user.password)
 
     db_user = User(username=user.username, password_hash=hashed)
-    session.add(db_user)
-    session.commit()
+
+    # try catch wrapper for username uniqueness
+    try:
+        session.add(db_user)
+        session.commit()
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="User already exists"
+        )
 
     return RegisterResponse(status ="user created", username = user.username)
 
-@router.post("/login", status_code=200)
+@router.post("/login", response_model=LoginResponse, status_code=200)
 def login(user: UserIn, session=Depends(get_session)):
 
     remove_expired_tokens(session)
@@ -55,7 +67,7 @@ def login(user: UserIn, session=Depends(get_session)):
 
     return LoginResponse(access_token= access_token, refresh_token = refresh_token.token)
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=LoginResponse, status_code=200)
 def refresh_token(
     session=Depends(get_session), 
     auth: HTTPAuthorizationCredentials = Depends(security)
@@ -81,7 +93,7 @@ def refresh_token(
 
     return LoginResponse(access_token= access_token, refresh_token = refresh_token.token)
 
-@router.post("/logout")
+@router.post("/logout", status_code=200)
 def logout(
     session=Depends(get_session), 
     auth: HTTPAuthorizationCredentials = Depends(security)

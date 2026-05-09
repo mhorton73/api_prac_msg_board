@@ -132,7 +132,7 @@ async def delete_message(id: int, session = Depends(get_session), user = Depends
     session.delete(message)
     session.flush()
 
-    cleanup_orphaned_tags(old_tags)
+    cleanup_orphaned_tags(session, old_tags)
 
     session.commit()
 
