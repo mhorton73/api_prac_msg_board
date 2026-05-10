@@ -65,7 +65,7 @@ def login(user: UserIn, session=Depends(get_session)):
     session.add(refresh_token)
     session.commit()
 
-    return LoginResponse(access_token= access_token, refresh_token = refresh_token.token)
+    return LoginResponse(username = db_user.username, access_token= access_token, refresh_token = refresh_token.token)
 
 @router.post("/refresh", response_model=LoginResponse, status_code=200)
 def refresh_token(

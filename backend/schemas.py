@@ -35,6 +35,7 @@ class RegisterResponse(BaseModel):
     username: str
 
 class LoginResponse(BaseModel):
+    username: str
     access_token: str
     refresh_token: str
     token_type: str = "Bearer"

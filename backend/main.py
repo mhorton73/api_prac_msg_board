@@ -11,6 +11,7 @@
 
 # Other things to look into at some point/ in future projects:
 #
+# Thread endpoint (get a message and all replies to it)
 # Multi-tag filtering
 # Move to PostgreSQL
 # Image posting
