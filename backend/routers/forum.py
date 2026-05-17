@@ -56,7 +56,8 @@ async def add_message(message: MessageIn, session = Depends(get_session), user =
 async def get_messages( 
         author: str = None, 
         tag: str = None, 
-        parent_id = None,
+        parent_id: int | None = None,
+        hide_deleted: bool = False,
         page: int = 1, 
         limit: int = 10, 
         sort: str = "timestamp", 
@@ -79,6 +80,8 @@ async def get_messages(
         query = query.join(Message.tags).filter(Tag.name.ilike(tag)).distinct()
     if parent_id is not None:
         query = query.filter_by(parent_id=parent_id)
+    if hide_deleted:
+        query = query.filter(Message.is_deleted.is_(False))
     
     # --- Sorting ---
 
@@ -125,15 +128,11 @@ async def delete_message(id: int, session = Depends(get_session), user = Depends
         raise HTTPException(status_code=404, detail="Message not found")
     if message.author != user.username:
         raise HTTPException(status_code=401, detail="Invalid Credentials")
+    if message.is_deleted:
+        raise HTTPException(status_code=400, detail="Message already deleted")
 
-    deleted_message = serialize_message(message)           # copy the message before deleting
-    old_tags = list(message.tags)
-
-    session.delete(message)
-    session.flush()
-
-    cleanup_orphaned_tags(session, old_tags)
-
+    message.is_deleted = True
+    deleted_message = serialize_message(message)
     session.commit()
 
     return MessageResponse(status="deleted", data = deleted_message)
@@ -150,6 +149,8 @@ async def edit_message(id: int, update: MessageIn, session = Depends(get_session
         raise HTTPException(status_code=404, detail="Message not found")
     if message.author != user.username:
         raise HTTPException(status_code=401, detail="Invalid Credentials")
+    if message.is_deleted:
+        raise HTTPException(status_code=400, detail="Message deleted")
     
     message.text = update.text
 

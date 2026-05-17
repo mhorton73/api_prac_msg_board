@@ -1,6 +1,38 @@
 import { useState, useEffect } from "react";
 import { fetchMessages, fetchParentMessage as parentMessageApi, postMessage, editMessage, deleteMessage } from "./api";
 
+const MessageButtons = ({ 
+  token, 
+  setEditId, 
+  setReplyId, 
+  setEditText,
+  message, 
+  currentUser,
+  onDelete
+}) => {
+  
+  return(
+    <>
+    {token && (
+      <>
+          <button onClick={() => {
+            setReplyId(message.id);
+            setEditId(null);
+          }}>Reply</button>
+          {currentUser === message.author && (
+            <>
+              <button onClick={() => {
+                setEditId(message.id);
+                setReplyId(null); 
+                setEditText(message.text); 
+              }}>Edit</button>
+              <button onClick={() => onDelete(message.id)}>Delete</button>
+           </>
+      )}
+      </>
+  )}</>)
+}
+
 const Messages = ({ token, currentUser }) => {
   const [messages, setMessages] = useState([]);
   const [page, setPage] = useState(1);
@@ -80,15 +112,15 @@ const Messages = ({ token, currentUser }) => {
     loadMessages();
   }
 
+  const handleDelete = async (id) => {
+    await deleteMessage(id, token);
+    loadMessages();
+  };
+
   const handleEdit = async (id) => {
     await editMessage(id, editText, token);
     setEditId(null);
     setEditText("");
-    loadMessages();
-  };
-
-  const handleDelete = async (id) => {
-    await deleteMessage(id, token);
     loadMessages();
   };
 
@@ -114,7 +146,14 @@ const Messages = ({ token, currentUser }) => {
         <div key={m.id}>
           {parent && (
             <div style={{ fontSize: "12px", color: "gray" }}>
-              {parent.author}: {parent.text.slice(0, 100)}
+              {parent.author}: {parent.is_deleted ? (
+                <span style={{ color: "gray", fontStyle: "italic" }}>
+                  [deleted]
+                </span>
+                
+              ) : (
+                parent.text.slice(0, 100)
+              )}
             </div>
           )}
           <b>{m.author}</b>: 
@@ -132,7 +171,10 @@ const Messages = ({ token, currentUser }) => {
                 {m.text}
                 <br/>
                 <input value={replyText} onChange={e => setReplyText(e.target.value)} />
-                <button onClick={handleReply}>Confirm</button>
+                <button onClick={() => {
+                  handleReply();
+                  setReplyId(null);
+                }}>Confirm</button>
                 <button onClick={() => {
                     setReplyId(null);
                     setReplyText("");
@@ -142,24 +184,23 @@ const Messages = ({ token, currentUser }) => {
             // If not editing or replying, show reply button if logged in,
             // and show edit and delete buttons if the message comes from your account.
             <>
-              {m.text}
-              <br/>
-              {token && (
+              {m.is_deleted ? (
+                  <span style={{ color: "gray", fontStyle: "italic" }}>
+                    [deleted]
+                  </span>
+                ) : (
                 <>
-                    <button onClick={() => {
-                    setReplyId(m.id);
-                    setEditId(null);
-                    }}>Reply</button>
-                    {currentUser === m.author && (
-                    <>
-                        <button onClick={() => {
-                            setEditId(m.id);
-                            setReplyId(null); 
-                            setEditText(m.text); 
-                        }}>Edit</button>
-                        <button onClick={() => handleDelete(m.id)}>Delete</button>
-                    </>
-                )}
+                  {m.text}
+                  <br/>
+                  <MessageButtons
+                    token={token}
+                    setEditId={setEditId}
+                    setReplyId={setReplyId}
+                    setEditText={setEditText}
+                    message={m}
+                    currentUser={currentUser}
+                    onDelete={handleDelete}
+                  />
                 </>
             )}
             </>

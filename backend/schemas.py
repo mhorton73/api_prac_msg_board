@@ -14,6 +14,7 @@ class MessageOut(BaseModel):
     text: str
     author: str
     timestamp: datetime
+    is_deleted: bool
     tags: List[str] = Field(default_factory=list)
 
 class MessageResponse(BaseModel):

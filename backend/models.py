@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, Integer, String, DateTime, Table, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Table, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from .database import Base
@@ -19,6 +19,7 @@ class Message(Base):
     author = Column(String, index=True)
     text = Column(String, index=True)
     timestamp = Column(DateTime, index=True)
+    is_deleted = Column(Boolean, default = False)
     tags = relationship("Tag", secondary=message_tags, back_populates="messages")
     
 

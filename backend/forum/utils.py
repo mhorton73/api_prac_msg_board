@@ -11,6 +11,7 @@ def serialize_message(message: Message):
         text=message.text,
         author=message.author,
         timestamp=message.timestamp,
+        is_deleted = message.is_deleted,
         tags=[tag.name for tag in message.tags]
     )
 
